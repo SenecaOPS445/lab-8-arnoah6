@@ -1,0 +1,72 @@
+- name: Basic Configuration for OPS445 VM with Action
+  hosts: vmlab
+  user: student
+  become: yes
+  vars:
+    apache_version: 2.6
+    motd_warning: "WARNING: used by ICT faculty/students only.\n"
+    testserver: yes
+  tasks:
+    - name: Update Apache (httpd)
+      action: "yum name=httpd state=latest"
+
+    - name: Install EPEL repository
+      yum:
+        name: epel-release
+        state: present
+
+    - name: Remove 'tree' package
+      yum:
+        name: tree
+        state: absent
+
+    - name: Update password for user arnoah
+      user:
+        name: arnoah
+        password: "{{ 'password123' | password_hash('sha512') }}" 
+
+    - name: Set hostname
+      hostname:
+        name: arnoah
+
+    - name: Create a new user with sudo privileges
+      user:
+        name: arnoah
+        groups: wheel
+        append: yes
+    
+    - name: Allow passwordless sudo for the new user
+      copy:
+        dest: /etc/sudoers.d/arnoah
+        content: "arnoah ALL=(ALL) NOPASSWD: ALL"
+        mode: '0440'
+    
+
+    - name: Create .ssh directory for arnoah
+      file:
+        path: "/home/arnoah/.ssh"
+        state: directory
+        mode: '0700'  
+        owner: arnoah
+        group: arnoah
+
+    
+    - name: Copy SSH public key to authorized_keys for arnoah
+      copy:
+        src: "~/.ssh/id_rsa.pub" 
+        dest: "/home/arnoah/.ssh/authorized_keys"
+        mode: '0600'  
+        owner: arnoah
+        group: arnoah
+
+    - name: Create directories for labs 1 to 8 using action
+      action: "command mkdir -p /home/arnoah/ops445/lab{{ item }}"
+      loop: 
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 6
+        - 7
+        - 8
